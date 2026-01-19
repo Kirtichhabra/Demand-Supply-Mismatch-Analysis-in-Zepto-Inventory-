@@ -159,3 +159,125 @@ Q6. find the prize per gram for the product with above 100g and sort the best va
    Query : select distinct name , (mrp/weightInGms) as prize_per_product from zepto 
            where weightInGms >100
 
+  Why We need this ? 
+1. Identify “Best Value for Money” Products 
+
+   Customers compare products by unit price, not just total price
+
+   Lower price per gram = better perceived value
+2. Competitive Pricing Strategy 
+
+Allows fair comparison across different pack sizes
+
+Prevents misleading pricing (small packs looking cheaper)  
+  
+3. Improve Customer Trust & Transparency 
+
+Many platforms show ₹/gram or ₹/kg
+
+Builds transparency and reduces return rates  
+
+Q7. Group the product into categories with low , medium and High .
+
+   SELECT 
+    
+    Distinct name,
+    category,
+    weightInGms,
+    CASE 
+        WHEN weightInGms <= 2 THEN 'Low'
+        WHEN weightInGms <= 5 THEN 'Medium'
+        ELSE 'High'
+    END AS value_segment
+FROM zepto;
+
+  why we need this ?
+
+
+   1. Raw numbers are hard to interpret
+
+      Segments make insights easy for business teams
+
+  2. Better Pricing Strategy 
+
+     Low → Value / budget products
+
+     Medium → Mass-market products
+
+     High → Premium products
+  3. Inventory & Supply Planning 📦
+
+   Low-value items → High volume, fast-moving
+
+   High-value items → Low volume, high margin
+
+ Q8 . How much inventory should we keep for each segment?
+
+    Query: WITH base_data AS (
+    SELECT
+        sku_id,
+        category,
+        name,
+        quantity,
+        weightInGms,
+        discountedSellingPrice,
+        (discountedSellingPrice / weightInGms) AS price_per_gram,
+        (quantity * weightInGms) AS total_weight_consumed
+    FROM zepto
+    WHERE outOfStock = FALSE
+),
+
+segmented_data AS (
+    SELECT
+        *,
+        CASE
+            WHEN price_per_gram <= 2 THEN 'Low'
+            WHEN price_per_gram <= 5 THEN 'Medium'
+            ELSE 'High'
+        END AS value_segment
+    FROM base_data
+)
+
+SELECT
+    value_segment,
+    COUNT(DISTINCT sku_id) AS total_skus,
+    SUM(quantity) AS total_quantity_sold,
+    SUM(total_weight_consumed) AS total_weight_sold_gms,
+
+    CASE
+        WHEN value_segment = 'Low' THEN SUM(total_weight_consumed) / 30 * 25
+        WHEN value_segment = 'Medium' THEN SUM(total_weight_consumed) / 30 * 15
+        ELSE SUM(total_weight_consumed) / 30 * 7
+    END AS recommended_inventory_gms
+
+FROM segmented_data
+GROUP BY value_segment
+ORDER BY value_segment;
+
+
+Why we need this ? 
+  
+1. Data-Driven Inventory Planning
+
+Based on actual consumption, not assumptions
+
+2. Reduces Overstock & Dead Inventory
+
+Especially important for high-value products
+
+3. Optimizes Warehouse Space
+
+Weight-based planning helps logistics & storage
+
+4. Improves Cash Flow
+
+Less money blocked in slow-moving stock
+
+5. Scales Well
+
+Works across categories, brands, and pack sizes
+
+
+
+  
+
